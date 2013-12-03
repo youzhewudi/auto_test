@@ -1,0 +1,28 @@
+#!/usr/bin/perl -w
+use lib "$ENV{'TEST_PATH_LIB'}";
+use strict;
+use DB_perl;
+use Getopt::Long;
+
+my $id;
+GetOptions( "gid=s" => \$id );
+if( !defined($id) || $id eq "" ){
+    print("Err: args is NULL\n");
+    exit 1;
+}
+
+my @temp = DB_perl::sql_exec("select ip_addr from dev_item where group_id = $id");
+if(!@temp){
+    print "没有对应设备!\n";
+    exit -1;
+}
+
+for(@temp){
+    my $ret = system("ping $_->{ip_addr} -c 3");
+    if($ret !~ 0){
+	print "$_->{ip_addr} 未连接！\n";
+	exit -1;
+    }
+}
+
+exit 0;

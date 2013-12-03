@@ -1,0 +1,7 @@
+#!/usr/bin/perl -w
+use strict;
+use lib "$ENV{'TEST_PATH_LIB'}";
+use DB_perl;
+
+my $policy = "";
+my $table_  = "policy_cfg_tc1";

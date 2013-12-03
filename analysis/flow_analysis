@@ -1,0 +1,70 @@
+#!/usr/bin/perl -w
+use strict;
+use lib "$ENV{'TEST_PATH_LIB'}";
+use Common;
+use DB_perl;
+use Getopt::Long;
+
+Common::become_daemon();
+
+my @cmd = ();
+my @cfg = DB_perl::sql_exec("select * from test_cfg");
+my $interval = $cfg[0]->{'time_val'};
+
+if ($cfg[0]->{'status'} == 1) {
+    print "Test is closed now";
+    exit 1;
+}
+
+my @central = DB_perl::sql_exec("select * from dev_item where dev_type=2");
+my @branch  = DB_perl::sql_exec("select * from dev_item where dev_type=1");
+
+my $waa_central = $central[0]->{'ip_addr'};
+my $waa_branch  = $branch[0]->{'ip_addr'};
+my $id_central  = $central[0]->{'id'};
+my $id_branch   = $branch[0]->{'id'};
+
+while (1) {
+    if ($interval == 1) { ## 30s
+	&analysis("ip" , "30s", $waa_central);
+	&analysis("app", "30s", $waa_central);
+
+	&analysis("ip" , "30s", $waa_branch);
+	&analysis("app", "30s", $waa_branch);
+
+	sleep(30);
+    } elsif ($interval == 2) {  ## 5m
+	&analysis("ip" , "5m", $waa_central);
+	&analysis("app", "5m", $waa_central);
+
+	&analysis("ip" , "5m", $waa_branch);
+	&analysis("app", "5m", $waa_branch);
+
+	sleep(600);
+    }
+}
+
+sub analysis() {
+    my ($target, $interval, $host) = @_;
+    my $table = "flow_analysis_" . $target . "_" . $time;
+
+    ## the last records in 30s(5m)
+    my $sql = "";
+    if ("30s" ~~ $interval){
+	$sql = "select * from $table WHERE capture_time > NOW() - INTERVAL 30 second";
+    } elsif ("5m" ~~ $interval) {
+	$sql = "select * from $table WHERE capture_time > NOW() - INTERVAL 5 minute";
+    }
+
+    my @data = DB_perl::sql_exec($sql, $host);
+
+    foreach (@data) {
+	my $table = "analysis_" + $target;
+	if ("ip" ~~ $target) {
+	    $sql = "insert into $table values('$data[0]->{'capture_time'}', '$id', '$host', '$_->{'in_size'}', '$_->{'out_size'}', '0', '')";
+	} elsif ("app" ~~ $target) {
+	    $sql = "insert into $table values('$data[0]->{'capture_time'}', '$id', '$host', '$_->{'in_size'}', '$_->{'out_size'}', '0', '')";
+	}
+	DB_perl::sql_exec($sql);
+    }
+}

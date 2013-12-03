@@ -1,0 +1,19 @@
+#!/usr/bin/perl -w
+use strict;
+use Getopt::Long;
+use lib "$ENV{'TEST_PATH_LIB'}";
+use DB_perl;
+
+my @cmd = ();
+## 配置加速策略
+push(@cmd, "$ENV{'TEST_PATH_BIN'}/accel_policy_cfg");
+
+## 在分支或总部进行数据传输
+push(@cmd, "fab -f $ENV{'TEST_PATH_CASE'}/scp/fabfile.py run_scp");
+
+## 开启加速分析进程
+push(@cmd, "$ENV{'TEST_PATH_BIN'}/accel_analysis");
+
+foreach (@cmd) {
+    system($_);
+}

@@ -1,0 +1,46 @@
+#!/usr/bin/perl -w
+use strict;
+use lib "$ENV{'TEST_PATH_LIB'}";
+use DB_perl;
+
+## 配置加速策略
+## 策略添加到WAA设备数据库中
+
+my $policy_cfg = "";
+my $table_name = "policy_cfg_accel";
+my @agent = (0, 1, 3);    ## 加速模式:   0普通加速，1FTP加速代理，3SSL加速代理
+my @snat = (0, 1);        ## 源地址保持：0不启用， 1启用
+my @forward = (0, 1);     ## 转发模式：  0不启用， 1启用
+
+## 配置加速策略，测试各种不同的参数组合。
+my $name = "";
+my @sql  = ();
+my $id   = 1;
+foreach my $agent (@agent) {
+    foreach my $snat (@snat) {
+	foreach my $forward (@forward) {
+	    ## 组合sql语句
+	    $name = "$agent" . "$snat" . "$forward";  ## 组合的数字作为策略名
+	    $policy_cfg = "INSERT INTO $table_name "
+		. "(id, name, agent, snat, forward) VALUES "
+		. "('$id', '$name', '$agent', '$snat', '$forward')";
+	    push(@sql, $policy_cfg);
+	    $id++;
+	}
+    }
+}
+
+## 在waa设备(分支和总部）上插入数据库：
+my @waa_branch  = DB_perl::sql_exec(
+    "select ip_addr from dev_item where dev_type=1");
+my @waa_central = DB_perl::sql_exec(
+    "select ip_addr from dev_item where dev_type=2");
+my @host = ($waa_branch[0]->{'ip_addr'}, $waa_central[0]->{'ip_addr'});
+
+foreach my $host (@host) {
+    DB_perl::sql_exec("truncate table $table_name", $host);
+
+    foreach my $sql (@sql) {
+	DB_perl::sql_exec($sql, $host);
+    }
+}

@@ -1,0 +1,14 @@
+#允许下载
+anon_world_readable_only=NO
+#允许写入,上传以及建立目录
+write_enable=YES
+anon_upload_enable=YES
+anon_mkdir_write_enable=YES
+
+#允许重命名和删除文件
+anon_other_write_enable=YES
+#允许修改文件属性
+chmod_enable=YES
+
+#本地根文件夹
+local_root=/home/ftpsite/waa_ftp

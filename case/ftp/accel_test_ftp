@@ -1,0 +1,24 @@
+#!/usr/bin/perl -w
+use strict;
+use lib "$ENV{'TEST_PATH_LIB'}";
+use DB_perl;
+use Common;
+use Getopt::Long;
+
+my $debug;
+
+GetOptions(
+    "debug!"  =>  \$debug
+    );
+
+my @cmd = ();
+## 配置策略
+push(@cmd, "$ENV{'TEST_PATH_BIN'}/accel_policy_cfg");
+
+## 执行ftp数据传输
+push(@cmd, "fab -f $ENV{'TEST_PATH_CASE'}/ftp/fabfile.py run_server");
+push(@cmd, "fab -f $ENV{'TEST_PATH_CASE'}/ftp/fabfile.py run_client");
+
+foreach (@cmd) {
+    system($_);
+}

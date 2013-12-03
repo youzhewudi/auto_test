@@ -1,0 +1,24 @@
+#!/bin/sh
+
+apt-get install vsftpd db4.8-util
+
+install -d /etc/pam.d/
+install -d /etc/vsftpd/
+install -d /home/ftpsite/
+install -d /etc/vsftpd_user_conf/
+
+cp vsftpd.conf /etc/vsftpd.conf
+cp waa_ftp     /etc/vsftpd_user_conf/waa_ftp
+cp vsftp.vu    /etc/pam.d/vsftp.vu
+
+db4.8_load -T -t hash -f ./account.txt /etc/vsftpd/account.db
+chmod 600 /etc/vsftpd/account.db
+
+useradd -d /home/ftpsite virtual_user
+chmod 700 /home/ftpsite
+chmod a-w /home/ftpsite
+mkdir /home/ftpsite/waa_ftp/
+
+cp /tmp/common/WAA_TEST_FILE /home/ftpsite/waa_ftp/
+
+service vsftpd restart

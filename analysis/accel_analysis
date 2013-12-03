@@ -1,0 +1,69 @@
+#!/usr/bin/perl -w
+use strict;
+use lib "$ENV{'TEST_PATH_LIB'}";
+use Common;
+use DB_perl;
+use Getopt::Long;
+
+Common::become_daemon();
+
+my @cfg = DB_perl::sql_exec("select * from test_cfg");
+
+if (1 == $cfg[0]->{'status'}) {
+    print "Test is closed now\n";
+    exit 1;
+}
+
+my @central = DB_perl::sql_exec("select * from dev_item where dev_type=2");
+my @branch  = DB_perl::sql_exec("select * from dev_item where dev_type=1");
+
+my $host = "";
+my $id = 0;
+if (1 == $cfg[0]->{'direc'}) { ## from branch to central
+    $host = $branch[0]->{'ip_addr'};
+    $id   = $branch[0]->{'id'};
+} elsif (2 == $cfg[0]->{'direc'}) { ## from central to branch
+    $host = $central[0]->{'ip_addr'};
+    $id   = $central[0]->{'id'};
+}
+
+## 同时插入两个表中
+my $origin;
+while (1) {
+    &analysis("ip");
+    &analysis("app");
+    sleep(30);
+}
+
+sub analysis() {
+    my ($target) = @_;
+    my $table = "flow_analysis_accel_" . $target;
+
+    my $sql = "SELECT * FROM $table ORDER BY capture_time DESC LIMIT 1";
+    my @data = DB_perl::sql_exec($sql, $host);
+
+    foreach (@data) {
+	my $rate = sprintf("%.2f", ($_->{'origin'} - $_->{'accel'}) / $_->{'origin'} * 100);
+
+	## 加速比值上下限范围
+	my $normal_high = $cfg[0]->{'rate_flow'} + $cfg[0]->{'range_accel'};
+	my $normal_low  = $cfg[0]->{'rate_flow'} - $cfg[0]->{'range_accel'};
+
+	## 异常记录
+	my $desc = "";
+	if ($rate >= $normal_low && $rate <= $normal_high) {
+	    next;  ## 正常范围不记录
+	} else {
+	    $desc = "Error: accel test rate is not normal";
+	}
+
+	## 分析结果存入数据库
+	my $table = "analysis_" . $target;
+	if ("ip" ~~ $target) {
+	    $sql = "insert into $table values ('$_->{'capture_time'}', '$id', '$_->{'ip_src'}', '0', '0', '$rate', '$desc')";
+	} elsif ("app" ~~ $target) {
+	    $sql = "insert into $table values ('$_->{'capture_time'}', '$id', '$_->{'app_id'}', '0', '0', '$rate', '$desc')";
+	}
+	DB_perl::sql_exec($sql);
+    }
+}

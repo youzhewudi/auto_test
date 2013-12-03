@@ -1,0 +1,18 @@
+fabfile.py:
+	向测试机器下发文件
+	远程调用文件传输脚本
+
+trans_scp.pl:
+	被下发文件，用于传输数据
+
+WAA_TEST_FILE:
+	被传输的数据文件
+
+accel_test_scp.pl:
+	测试主程序
+
+scpkey.py:
+	被下发文件，用于配置scp公钥
+
+scpkey.sh:
+	被下发文件，用于创建本地公钥

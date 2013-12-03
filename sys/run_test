@@ -1,0 +1,39 @@
+#!/usr/bin/perl -w
+use strict;
+use Getopt::Long;
+use Sys::Syslog;
+use lib "$ENV{'TEST_PATH_LIB'}";
+use DB_perl;
+
+my @cmd = ();
+my $id = -1;
+GetOptions(
+    "id=i" => \$id
+    );
+
+if (-1 == $id) {
+    syslog("info", "run_test needs param: --id ...");
+    exit 1;
+}
+## deploy files
+push(@cmd, "fab -f $ENV{'TEST_PATH_BIN'}/file_deploy.py deploy:id=$id");
+
+## execute test case
+my $sql  = "select * from test_cfg where id=$id";
+my @data = DB_perl::sql_exec($sql);
+if (! @data) {
+    syslog("info", "No params exist in table test_cfg");
+    exit 1;
+}
+
+$sql  = "select * from test_method where id=$data[0]->{'method_id'}";
+@data = DB_perl::sql_exec($sql);
+if (! @data) {
+    syslog("info", "No params exist in table test_method");
+    exit 1;
+}
+push(@cmd, $data[0]->{'cmd'});
+
+foreach (@cmd) {
+    system($_);
+}

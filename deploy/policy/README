@@ -1,0 +1,8 @@
+accel_policy_cfg.pl:
+	在waa设备上配置加速策略，
+
+flow_policy_cfg.pl:
+	在waa设备上配置流控策略
+
+waa_test_policy.pl:
+	配置WAA_TEST设备上数据库

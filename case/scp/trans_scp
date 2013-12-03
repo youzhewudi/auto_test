@@ -1,0 +1,36 @@
+#!/usr/bin/perl -w
+use strict;
+use lib "/tmp/common/";
+use Common;
+use Getopt::Long;
+use Sys::Syslog;
+
+Common::become_daemon();
+
+my $host;
+my $direc;
+GetOptions(
+    "host=s"  => \$host,
+    "direc=s" => \$direc
+    );
+
+if (!defined($host)) {
+    syslog("warning", "trans_scp.pl need host addr");
+    exit 1;
+}
+
+my $file = "/tmp/common/WAA_TEST_FILE";
+
+my $cmd;
+if ("upload" ~~ $direc) {
+    $cmd = "scp $file $host:$file";
+} elsif ("download" ~~ $direc) {
+    $cmd = "scp $host:$file $file";
+} else {
+    syslog("info", "Cmd 'trans_scp' need direction(--download or --upload)");
+    exit 1;
+}
+
+while (1) {
+    system($cmd);
+}

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+install -d $TEST_PATH_BIN
+install -d $TEST_PATH_LIB
+install -d $TEST_PATH_FILE
+install -d $TEST_PATH_CASE

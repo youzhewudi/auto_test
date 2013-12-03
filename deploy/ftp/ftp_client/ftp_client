@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+use strict;
+use Getopt::Long;
+use Sys::Syslog;
+use lib "/tmp/common/";
+use Common;
+
+Common::become_daemon();
+
+my ($direc, $host, $user, $passwd) = ("", "", "", "");
+GetOptions(
+    "direc=s"   => \$direc,
+    "host=s"    => \$host,
+    "user=s"    => \$user,
+    "passwd=s"  => \$passwd
+    );
+
+my $file = "/tmp/common/WAA_TEST_FILE";
+my $cmd;
+
+## download file from ftp server
+if ("download" ~~ $direc) {
+    $cmd = "curl ftp://$host/WAA_TEST_FILE -u $user:$passwd -o $file";
+} elsif ("upload" ~~ $direc) { ## upload file to ftp server
+    $cmd = "curl -T $file ftp://$host -u $user:$passwd ";
+} else {
+    syslog("info", "ftp_client need param: --direc ...");
+    exit 1;
+}
+
+while (1) {
+    system($cmd);
+}
